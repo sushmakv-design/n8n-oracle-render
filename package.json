@@ -1,12 +1,11 @@
 {
   "name": "n8n-oracle-render",
   "version": "1.0.0",
-  "description": "n8n workflow running on Render with Oracle DB connection",
-  "scripts": {
-    "start": "npx n8n start"
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
-    "n8n": "^2.232.0",
+    "n8n": "1.115.3",
     "oracledb": "^5.3.0"
   }
 }
