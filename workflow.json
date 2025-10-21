@@ -1,0 +1,39 @@
+{
+  "name": "Oracle Test Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "oracle-test",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const oracledb = require('oracledb');\n\nasync function runQuery() {\n  let connection;\n  try {\n    connection = await oracledb.getConnection({\n      user: process.env.ORACLE_USER || 'UCMS_db',\n      password: process.env.ORACLE_PASSWORD || 'c_xps123',\n      connectString: `${process.env.ORACLE_HOST || '192.168.5.127'}:${process.env.ORACLE_PORT || '1521'}/${process.env.ORACLE_SERVICE || 'ORA19CDB'}`\n    });\n\n    const result = await connection.execute(`SELECT * FROM YOUR_TABLE WHERE ROWNUM <= 10`);\n    return result.rows.map(row => ({ json: row }));\n  } catch (err) {\n    return [{ json: { error: err.message } }];\n  } finally {\n    if (connection) await connection.close();\n  }\n}\n\nreturn runQuery();"
+      },
+      "name": "Oracle Query",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Oracle Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  ]
+}
