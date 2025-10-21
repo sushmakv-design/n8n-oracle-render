@@ -1,49 +1,39 @@
 # ------------------------------------------
-# 1️⃣ Use prebuilt image with Oracle Instant Client
-# ------------------------------------------
-FROM ghcr.io/gvenzl/oracle-instantclient:23 AS base
-
-# ------------------------------------------
-# 2️⃣ Use official Node image for n8n
+# 1️⃣ Use Node base image
 # ------------------------------------------
 FROM node:22
 
-# Copy Oracle libraries from the instant client layer
-COPY --from=base /usr/lib/oracle /usr/lib/oracle
-COPY --from=base /usr/share/oracle /usr/share/oracle
-COPY --from=base /opt/oracle /opt/oracle
-
-# Set environment for Oracle
-ENV LD_LIBRARY_PATH=/usr/lib/oracle/23/client64/lib:$LD_LIBRARY_PATH
-ENV PATH=/usr/lib/oracle/23/client64/bin:$PATH
-ENV TNS_ADMIN=/usr/lib/oracle/23/client64/network/admin
+# ------------------------------------------
+# 2️⃣ Install Oracle Instant Client directly from Oracle's yum repo
+# ------------------------------------------
+RUN apt-get update && apt-get install -y wget unzip libaio1 && \
+    mkdir -p /opt/oracle && \
+    cd /opt/oracle && \
+    wget https://objectstorage.ap-mumbai-1.oraclecloud.com/n/ax7yybqrmz7s/b/instantclient/o/instantclient-basiclite-linux.x64-23.6.0.24.10.zip -O instantclient.zip && \
+    unzip instantclient.zip && \
+    rm instantclient.zip && \
+    ln -s /opt/oracle/instantclient_23_6 /opt/oracle/instantclient
 
 # ------------------------------------------
-# 3️⃣ Install dependencies
+# 3️⃣ Set environment variables
 # ------------------------------------------
-RUN apt-get update && apt-get install -y \
-    libaio1 unzip curl wget && \
-    rm -rf /var/lib/apt/lists/*
+ENV LD_LIBRARY_PATH=/opt/oracle/instantclient
+ENV PATH=/opt/oracle/instantclient:$PATH
 
 # ------------------------------------------
-# 4️⃣ Setup n8n
+# 4️⃣ Install n8n and Oracle driver
 # ------------------------------------------
-WORKDIR /usr/src/app
-
-# Copy your workflow/project files (if any)
-COPY package*.json ./
-
-# Install n8n and oracledb driver
 RUN npm install -g n8n && \
     npm install oracledb
 
-# Copy the rest of your app (optional)
+# ------------------------------------------
+# 5️⃣ Copy your project
+# ------------------------------------------
+WORKDIR /usr/src/app
 COPY . .
 
 # ------------------------------------------
-# 5️⃣ Expose n8n port and run
+# 6️⃣ Expose port and run
 # ------------------------------------------
 EXPOSE 5678
-
-# For Render deployment or local testing
 CMD ["n8n", "start", "--tunnel"]
