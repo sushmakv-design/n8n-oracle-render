@@ -2,7 +2,7 @@
   "name": "n8n-oracle-render",
   "version": "1.0.0",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.19 <=24"
   },
   "scripts": {
     "start": "n8n start --tunnel"
