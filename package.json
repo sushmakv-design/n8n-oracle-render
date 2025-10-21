@@ -4,6 +4,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "scripts": {
+    "start": "n8n start --tunnel"
+  },
   "dependencies": {
     "n8n": "1.115.3",
     "oracledb": "^5.3.0"
