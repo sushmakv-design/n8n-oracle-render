@@ -1,25 +1,34 @@
-# 1️⃣ Use Node.js as base (n8n requires Node)
+# 1️⃣ Use Node.js base for n8n
 FROM node:20-bullseye
 
-# 2️⃣ Set Oracle Instant Client path
+# 2️⃣ Set Oracle Instant Client environment variable
 ENV LD_LIBRARY_PATH=/opt/oracle/instantclient_21_4
 
-# 3️⃣ Install dependencies
+# 3️⃣ Install required packages and download/unzip Instant Client
 RUN apt-get update && \
-    apt-get install -y libaio1 libaio-dev unzip wget build-essential --no-install-recommends
+    apt-get install -y libaio1 libaio-dev unzip wget build-essential libpq-dev zlib1g-dev --no-install-recommends && \
+    mkdir -p /opt/oracle && \
+    cd /opt/oracle && \
+    wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-basic-linux.x64-21.4.0.0.0dbru.zip && \
+    wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-sdk-linux.x64-21.4.0.0.0dbru.zip && \
+    wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-sqlplus-linux.x64-21.4.0.0.0dbru.zip && \
+    unzip instantclient-basic-linux.x64-21.4.0.0.0dbru.zip && \
+    unzip instantclient-sdk-linux.x64-21.4.0.0.0dbru.zip && \
+    unzip instantclient-sqlplus-linux.x64-21.4.0.0.0dbru.zip && \
+    rm -rf instantclient-*.zip && \
+    apt-get remove -y wget unzip && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt
 
-# 4️⃣ Copy your local Oracle Instant Client folder
-COPY instantclient_21_4 /opt/oracle/instantclient_21_4
-
-# 5️⃣ Install n8n globally
+# 4️⃣ Install n8n globally
 RUN npm install -g n8n
 
-# 6️⃣ Set environment variables for basic auth (override with Render .env)
-ENV N8N_BASIC_AUTH_USER=admin
-ENV N8N_BASIC_AUTH_PASSWORD=admin
+# 5️⃣ Set working directory for workflows
+WORKDIR /data
 
-# 7️⃣ Expose n8n default port
+# 6️⃣ Expose default n8n port
 EXPOSE 5678
 
-# 8️⃣ Start n8n when container runs
-CMD ["n8n", "start"]
+# 7️⃣ Default command to run n8n
+CMD ["n8n"]
