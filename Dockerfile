@@ -1,30 +1,49 @@
-# Node version supported by n8n
+# ------------------------------------------
+# 1️⃣ Use prebuilt image with Oracle Instant Client
+# ------------------------------------------
+FROM ghcr.io/gvenzl/oracle-instantclient:23 AS base
+
+# ------------------------------------------
+# 2️⃣ Use official Node image for n8n
+# ------------------------------------------
 FROM node:22
 
-# Install OS dependencies
-RUN apt-get update && apt-get install -y libaio1 unzip wget && rm -rf /var/lib/apt/lists/*
+# Copy Oracle libraries from the instant client layer
+COPY --from=base /usr/lib/oracle /usr/lib/oracle
+COPY --from=base /usr/share/oracle /usr/share/oracle
+COPY --from=base /opt/oracle /opt/oracle
 
-# Download Oracle Instant Client
-RUN wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linux.x64-23.8.0.0.0dbru.zip -O /tmp/instantclient.zip && \
-    unzip /tmp/instantclient.zip -d /opt && \
-    rm /tmp/instantclient.zip && \
-    ln -s /opt/instantclient_23_8 /opt/instantclient
+# Set environment for Oracle
+ENV LD_LIBRARY_PATH=/usr/lib/oracle/23/client64/lib:$LD_LIBRARY_PATH
+ENV PATH=/usr/lib/oracle/23/client64/bin:$PATH
+ENV TNS_ADMIN=/usr/lib/oracle/23/client64/network/admin
 
-# Set environment variables
-ENV LD_LIBRARY_PATH=/opt/instantclient
-ENV PATH=$PATH:/opt/instantclient
+# ------------------------------------------
+# 3️⃣ Install dependencies
+# ------------------------------------------
+RUN apt-get update && apt-get install -y \
+    libaio1 unzip curl wget && \
+    rm -rf /var/lib/apt/lists/*
 
-# Working directory
+# ------------------------------------------
+# 4️⃣ Setup n8n
+# ------------------------------------------
 WORKDIR /usr/src/app
 
-# Copy project files
-COPY package.json workflow.json .env ./
+# Copy your workflow/project files (if any)
+COPY package*.json ./
 
-# Install Node dependencies
-RUN npm install
+# Install n8n and oracledb driver
+RUN npm install -g n8n && \
+    npm install oracledb
 
-# Expose n8n port
+# Copy the rest of your app (optional)
+COPY . .
+
+# ------------------------------------------
+# 5️⃣ Expose n8n port and run
+# ------------------------------------------
 EXPOSE 5678
 
-# Start n8n with tunnel
+# For Render deployment or local testing
 CMD ["n8n", "start", "--tunnel"]
