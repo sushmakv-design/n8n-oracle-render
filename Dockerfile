@@ -1,39 +1,44 @@
 # ------------------------------------------
-# 1️⃣ Use Node base image
+# 1️⃣ Base image with Node.js
 # ------------------------------------------
 FROM node:22
 
 # ------------------------------------------
-# 2️⃣ Install Oracle Instant Client directly from Oracle's yum repo
+# 2️⃣ Set working directory
 # ------------------------------------------
-RUN apt-get update && apt-get install -y wget unzip libaio1 && \
-    mkdir -p /opt/oracle && \
-    cd /opt/oracle && \
-    wget https://objectstorage.ap-mumbai-1.oraclecloud.com/n/ax7yybqrmz7s/b/instantclient/o/instantclient-basiclite-linux.x64-23.6.0.24.10.zip -O instantclient.zip && \
-    unzip instantclient.zip && \
-    rm instantclient.zip && \
-    ln -s /opt/oracle/instantclient_23_6 /opt/oracle/instantclient
+WORKDIR /usr/src/app
 
 # ------------------------------------------
-# 3️⃣ Set environment variables
+# 3️⃣ Copy your Oracle Instant Client from Windows
 # ------------------------------------------
-ENV LD_LIBRARY_PATH=/opt/oracle/instantclient
-ENV PATH=/opt/oracle/instantclient:$PATH
+COPY instantclient_23_26 /opt/oracle/instantclient_23_26
 
 # ------------------------------------------
-# 4️⃣ Install n8n and Oracle driver
+# 4️⃣ Install required dependencies
+# ------------------------------------------
+RUN apt-get update && apt-get install -y libaio1 unzip curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------
+# 5️⃣ Set environment variables for Oracle
+# ------------------------------------------
+ENV LD_LIBRARY_PATH=/opt/oracle/instantclient_23_26
+ENV PATH=/opt/oracle/instantclient_23_26:$PATH
+ENV TNS_ADMIN=/opt/oracle/instantclient_23_26/network/admin
+
+# ------------------------------------------
+# 6️⃣ Install n8n and oracledb
 # ------------------------------------------
 RUN npm install -g n8n && \
     npm install oracledb
 
 # ------------------------------------------
-# 5️⃣ Copy your project
+# 7️⃣ Copy your app/workflow files
 # ------------------------------------------
-WORKDIR /usr/src/app
 COPY . .
 
 # ------------------------------------------
-# 6️⃣ Expose port and run
+# 8️⃣ Expose n8n port and start
 # ------------------------------------------
 EXPOSE 5678
 CMD ["n8n", "start", "--tunnel"]
