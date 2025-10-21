@@ -7,12 +7,14 @@ FROM node:20
 
 # Install system dependencies for Oracle Instant Client
 RUN apt-get update && \
-    apt-get install -y libaio1 unzip wget && \
+    apt-get install -y libaio1 unzip && \
     rm -rf /var/lib/apt/lists/*
 
-# Download and install Oracle Instant Client
-RUN wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linux.x64-23.8.0.0.0dbru.zip -O /tmp/instantclient.zip && \
-    unzip /tmp/instantclient.zip -d /opt && \
+# Copy Oracle Instant Client zip into container
+COPY instantclient-basic-linux.x64-23.8.0.0.0dbru.zip /tmp/instantclient.zip
+
+# Unzip and setup
+RUN unzip /tmp/instantclient.zip -d /opt && \
     rm /tmp/instantclient.zip && \
     ln -s /opt/instantclient_23_8 /opt/instantclient
 
@@ -32,8 +34,7 @@ RUN npm install
 # Expose default n8n port
 EXPOSE 5678
 
-# Load environment variables from .env file (optional for local testing)
-# If using Render, environment variables from the dashboard will override
+# Load environment variables from .env (optional, overridden by Render dashboard variables)
 ENV N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
 ENV N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
 ENV N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
